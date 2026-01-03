@@ -112,13 +112,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
             </div>
 
             <div class="nav-actions">
-                <!-- Attendance Widget (Moved to Header) -->
-                <div class="attendance-widget" style="margin-right: 12px;">
-                    <span id="timeCounter" class="time-counter">00:00:00</span>
-                    <button type="button" id="attendanceToggle" class="check-in-btn" title="Check In">
-                        <i class="fa fa-power-off"></i>
-                    </button>
-                </div>
+                <!-- Attendance Widget Removed for Admin -->
+                <div class="attendance-widget" style="margin-right: 12px; display: none;"></div>
                 
                 <!-- Add Employee Button -->
                 <a href="register.php" class="btn btn-primary btn-sm" style="margin-right: 12px; display: flex; align-items: center; gap: 6px;">
@@ -215,13 +210,145 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
 
                 <!-- MODULE: ATTENDANCE -->
                 <div id="module-attendance" class="module-section">
-                    <div class="card">
-                        <h3 style="margin-bottom: 20px;">Daily Attendance</h3>
-                        <div class="message-box success" style="margin-bottom: 20px;">
-                            <i class="fa fa-info-circle"></i> Today is <?php echo date("l, F j, Y"); ?>
-                        </div>
-                        <p style="color: var(--text-light); text-align: center; padding: 40px;">No attendance records found for today.</p>
+                    
+                    <!-- Manual Attendance / Correction -->
+                    <div class="card" style="margin-bottom: 24px;">
+                        <h3><i class="fa fa-edit"></i> Manual Attendance Update</h3>
+                        <form method="POST" action="" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: end; margin-top: 16px;">
+                            <input type="hidden" name="manual_update" value="1">
+                            
+                            <div class="form-group">
+                                <label style="font-size: 12px; margin-bottom: 4px; display: block;">Employee</label>
+                                <select name="user_id" required style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                                    <option value="">Select Employee</option>
+                                    <?php
+                                    $emp_q = $conn->query("SELECT id, full_name, login_id FROM users WHERE role='employee'");
+                                    while($emp = $emp_q->fetch_assoc()) {
+                                        echo "<option value='".$emp['id']."'>".$emp['full_name']." (".$emp['login_id'].")</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label style="font-size: 12px; margin-bottom: 4px; display: block;">Date</label>
+                                <input type="date" name="date" required style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label style="font-size: 12px; margin-bottom: 4px; display: block;">Status</label>
+                                <select name="status" required style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                                    <option value="Present">Present</option>
+                                    <option value="Absent">Absent</option>
+                                    <option value="Half-day">Half-day</option>
+                                    <option value="Leave">Leave</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="height: 38px;">Update Status</button>
+                        </form>
+                        <?php
+                        if (isset($_POST['manual_update'])) {
+                            $u_id = $_POST['user_id'];
+                            $u_date = $_POST['date'];
+                            $u_status = $_POST['status'];
+                            
+                            // Check if exists
+                            $check = $conn->prepare("SELECT id FROM attendance WHERE user_id=? AND date=?");
+                            $check->bind_param("is", $u_id, $u_date);
+                            $check->execute();
+                            if ($check->get_result()->num_rows > 0) {
+                                $upd = $conn->prepare("UPDATE attendance SET status=? WHERE user_id=? AND date=?");
+                                $upd->bind_param("sis", $u_status, $u_id, $u_date);
+                                $upd->execute();
+                            } else {
+                                $ins = $conn->prepare("INSERT INTO attendance (user_id, date, status) VALUES (?, ?, ?)");
+                                $ins->bind_param("iss", $u_id, $u_date, $u_status);
+                                $ins->execute();
+                            }
+                            echo "<p style='color: green; margin-top: 10px;'>Attendance updated successfully.</p>";
+                        }
+                        ?>
                     </div>
+
+                    <!-- Attendance View -->
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>All Employees Attendance</h3>
+                            <form method="GET" style="display: flex; gap: 8px;">
+                                <input type="date" name="filter_date" value="<?php echo $_GET['filter_date'] ?? date('Y-m-d'); ?>" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                                <button type="submit" class="btn btn-sm btn-secondary">Filter</button>
+                            </form>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8fafc; text-align: left;">
+                                        <th style="padding: 12px;">Employee</th>
+                                        <th style="padding: 12px;">Date</th>
+                                        <th style="padding: 12px;">Check In</th>
+                                        <th style="padding: 12px;">Check Out</th>
+                                        <th style="padding: 12px;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $filter_date = $_GET['filter_date'] ?? date('Y-m-d');
+                                    $att_sql = "SELECT a.*, u.full_name, u.login_id FROM attendance a JOIN users u ON a.user_id = u.id WHERE a.date = ? ORDER BY u.full_name ASC";
+                                    
+                                    // If looking at today, we might want to see who hasn't checked in too? 
+                                    // Valid point, but let's stick to showing records first or left join.
+                                    // To see ALL employees status for a day (even if absent/no record), we need RIGHT JOIN with users.
+                                    // Let's do a LEFT JOIN from Users to Attendance to show Absentees.
+                                    
+                                    $att_sql = "SELECT u.full_name, u.login_id, a.check_in_time, a.check_out_time, a.status as att_status, l.status as leave_status 
+                                                FROM users u 
+                                                LEFT JOIN attendance a ON u.id = a.user_id AND a.date = ? 
+                                                LEFT JOIN leave_requests l ON u.id = l.user_id AND ? BETWEEN l.from_date AND l.to_date AND l.status = 'Approved'
+                                                WHERE u.role = 'employee' 
+                                                ORDER BY u.full_name ASC";
+                                    
+                                    $stmt = $conn->prepare($att_sql);
+                                    $stmt->bind_param("ss", $filter_date, $filter_date);
+                                    $stmt->execute();
+                                    $res = $stmt->get_result();
+                                    
+                                    if ($res->num_rows > 0) {
+                                        while ($row = $res->fetch_assoc()) {
+                                            // Determine Status Priority
+                                            $status = $row['att_status'];
+                                            if (empty($status)) {
+                                                if (!empty($row['leave_status'])) {
+                                                    $status = 'Leave';
+                                                } else {
+                                                    $status = 'Absent';
+                                                }
+                                            }
+                                            
+                                            $statusColor = 'var(--text-light)';
+                                            if ($status == 'Present') $statusColor = 'var(--success)';
+                                            elseif ($status == 'Absent') $statusColor = 'var(--danger)';
+                                            elseif ($status == 'Half-day') $statusColor = 'var(--warning)';
+                                            elseif ($status == 'Leave') $statusColor = 'var(--info)';
+
+                                            echo "<tr style='border-bottom: 1px solid #f1f5f9;'>";
+                                            echo "<td style='padding: 12px;'><strong>" . htmlspecialchars($row['full_name']) . "</strong><br><span style='font-size:12px; color:#888;'>" . $row['login_id'] . "</span></td>";
+                                            echo "<td style='padding: 12px;'>" . date("M j", strtotime($filter_date)) . "</td>";
+                                            echo "<td style='padding: 12px;'>" . ($row['check_in_time'] ? date("h:i A", strtotime($row['check_in_time'])) : '-') . "</td>";
+                                            echo "<td style='padding: 12px;'>" . ($row['check_out_time'] ? date("h:i A", strtotime($row['check_out_time'])) : '-') . "</td>";
+                                            echo "<td style='padding: 12px;'><span style='color: white; background: {$statusColor}; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;'>" . $status . "</span></td>";
+                                            echo "</tr>";
+                                        }
+                                    } else {
+                                        echo "<tr><td colspan='5' style='padding: 20px; text-align: center;'>No employees found.</td></tr>";
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- MODULE: RECRUITMENT -->
@@ -247,12 +374,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
                                 </div>
                             </div>
                             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; text-align: center;">
-                                <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">On Time Today</h4>
-                                <div style="font-size: 24px; font-weight: 700; color: var(--success);">0</div>
+                                <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">Checked In Today</h4>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--success);">
+                                <?php
+                                $today = date('Y-m-d');
+                                $c_in = $conn->query("SELECT count(*) as c FROM attendance WHERE date='$today'");
+                                echo $c_in->fetch_assoc()['c'];
+                                ?>
+                                </div>
                             </div>
                             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; text-align: center;">
-                                <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">Absent</h4>
-                                <div style="font-size: 24px; font-weight: 700; color: var(--text-light);">-</div>
+                                <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">Pending Leaves</h4>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--warning);">
+                                <?php
+                                $c_l = $conn->query("SELECT count(*) as c FROM leave_requests WHERE status='Pending'");
+                                echo $c_l->fetch_assoc()['c'];
+                                ?>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -294,53 +432,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
         document.querySelector('.nav-module-link.active').style.color = 'var(--primary)';
 
 
-        // --- Client-side Simulation Logic (Attendance Widget) ---
-        const toggleBtn = document.getElementById('attendanceToggle');
-        const timerDisplay = document.getElementById('timeCounter');
-        let isCheckedIn = false;
-        let startTime = 0;
-        let timerInterval;
-
-        // Restore state from local storage (Simulation persistence)
-        if (localStorage.getItem('sim_isCheckedIn') === 'true') {
-            isCheckedIn = true;
-            startTime = parseInt(localStorage.getItem('sim_startTime'));
-            toggleBtn.classList.add('checked-in');
-            toggleBtn.title = "Check Out";
-            startTimer();
-        }
-
-        toggleBtn.addEventListener('click', function() {
-            if (!isCheckedIn) {
-                // Check In
-                isCheckedIn = true;
-                startTime = new Date().getTime();
-                localStorage.setItem('sim_isCheckedIn', 'true');
-                localStorage.setItem('sim_startTime', startTime);
-                toggleBtn.classList.add('checked-in');
-                toggleBtn.title = "Check Out";
-                startTimer();
-            } else {
-                // Check Out
-                isCheckedIn = false;
-                localStorage.removeItem('sim_isCheckedIn');
-                localStorage.removeItem('sim_startTime');
-                toggleBtn.classList.remove('checked-in');
-                toggleBtn.title = "Check In";
-                stopTimer();
-                timerDisplay.innerText = "00:00:00";
-            }
-        });
-
-        function startTimer() {
-            // Update immediately
-            updateDisplay();
-            timerInterval = setInterval(updateDisplay, 1000);
-        }
-
-        function stopTimer() {
-            clearInterval(timerInterval);
-        }
+        // Admin JS Logic (Cleaned up)
+        // No client side simulation for admin attendance needed
 
         function updateDisplay() {
             if (!isCheckedIn) return;

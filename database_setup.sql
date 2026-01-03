@@ -26,3 +26,27 @@ INSERT INTO companies (company_name, company_code) VALUES ('Dayflow Inc', 'DAYFL
 INSERT INTO users (company_id, login_id, full_name, email, phone, password, role) 
 VALUES (1, 'ADMIN001', 'System Admin', 'admin@dayflow.com', '1234567890', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
 -- Note: You should generate a real hash for 'admin123' using PHP's password_hash function.
+
+-- Attendance Table
+CREATE TABLE IF NOT EXISTS attendance (
+    id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT(11) UNSIGNED NOT NULL,
+    date DATE NOT NULL,
+    check_in_time TIME,
+    check_out_time TIME,
+    status ENUM('Present', 'Absent', 'Half-day', 'Leave') DEFAULT 'Absent',
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_attendance (user_id, date)
+);
+
+-- Leave Requests Table
+CREATE TABLE IF NOT EXISTS leave_requests (
+    id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT(11) UNSIGNED NOT NULL,
+    from_date DATE NOT NULL,
+    to_date DATE NOT NULL,
+    reason TEXT,
+    status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
