@@ -153,7 +153,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
                     <div class="card" style="margin-top: 0;">
                         <?php
                         // Updated query to remove company_id check
-                        $q = $conn->prepare("SELECT full_name, email, phone, login_id, role FROM users WHERE role = 'employee' ORDER BY created_at DESC");
+                        $q = $conn->prepare("SELECT id, full_name, email, phone, login_id, role FROM users WHERE role = 'employee' ORDER BY created_at DESC");
                         $q->execute();
                         $res = $q->get_result();
                         ?>
@@ -188,7 +188,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
                                         </div>
                                         <div class="yt-text-info">
                                             <h3 class="yt-title" title="<?php echo htmlspecialchars($row['full_name']); ?>">
-                                                <?php echo htmlspecialchars($row['full_name']); ?>
+                                                <a href="admin_employee_details.php?id=<?php echo $row['id']; ?>" style="text-decoration: none; color: inherit;">
+                                                    <?php echo htmlspecialchars($row['full_name']); ?>
+                                                </a>
                                             </h3>
                                             <div class="yt-channel-name">
                                                 <?php echo ucfirst($row['role']); ?> &bull; Active
@@ -199,7 +201,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
                                                 <span><?php echo htmlspecialchars($row['phone']); ?></span>
                                             </div>
                                         </div>
-                                        <div class="yt-menu-dots"><i class="fa fa-ellipsis-v"></i></div>
+                                        <div class="yt-menu-dots">
+                                            <a href="admin_employee_details.php?id=<?php echo $row['id']; ?>" title="View Details" style="color: var(--text-light);">
+                                                <i class="fa fa-info-circle"></i>
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                                 <?php endwhile; ?>
@@ -276,6 +282,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                             <h3>All Employees Attendance</h3>
                             <form method="GET" style="display: flex; gap: 8px;">
+                                <select name="filter_user_id" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                                    <option value="">All Employees</option>
+                                    <?php
+                                    $all_users = $conn->query("SELECT id, full_name FROM users WHERE role='employee' ORDER BY full_name");
+                                    $selected_user = $_GET['filter_user_id'] ?? '';
+                                    while($u = $all_users->fetch_assoc()) {
+                                        $sel = ($u['id'] == $selected_user) ? 'selected' : '';
+                                        echo "<option value='".$u['id']."' $sel>".$u['full_name']."</option>";
+                                    }
+                                    ?>
+                                </select>
                                 <input type="date" name="filter_date" value="<?php echo $_GET['filter_date'] ?? date('Y-m-d'); ?>" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
                                 <button type="submit" class="btn btn-sm btn-secondary">Filter</button>
                             </form>
@@ -295,7 +312,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
                                 <tbody>
                                     <?php
                                     $filter_date = $_GET['filter_date'] ?? date('Y-m-d');
-                                    $att_sql = "SELECT a.*, u.full_name, u.login_id FROM attendance a JOIN users u ON a.user_id = u.id WHERE a.date = ? ORDER BY u.full_name ASC";
+                                    $filter_user_id = $_GET['filter_user_id'] ?? '';
                                     
                                     // If looking at today, we might want to see who hasn't checked in too? 
                                     // Valid point, but let's stick to showing records first or left join.
@@ -306,11 +323,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
                                                 FROM users u 
                                                 LEFT JOIN attendance a ON u.id = a.user_id AND a.date = ? 
                                                 LEFT JOIN leave_requests l ON u.id = l.user_id AND ? BETWEEN l.from_date AND l.to_date AND l.status = 'Approved'
-                                                WHERE u.role = 'employee' 
-                                                ORDER BY u.full_name ASC";
+                                                WHERE u.role = 'employee' ";
+                                    
+                                    $params = ["ss", $filter_date, $filter_date];
+                                    
+                                    if (!empty($filter_user_id)) {
+                                        $att_sql .= " AND u.id = ? ";
+                                        $params[0] .= "i";
+                                        $params[] = $filter_user_id;
+                                    }
+                                    
+                                    $att_sql .= " ORDER BY u.full_name ASC";
                                     
                                     $stmt = $conn->prepare($att_sql);
-                                    $stmt->bind_param("ss", $filter_date, $filter_date);
+                                    
+                                    // Dynamic binding
+                                    $stmt->bind_param(...$params);
                                     $stmt->execute();
                                     $res = $stmt->get_result();
                                     
@@ -427,9 +455,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
             });
         });
 
-        // Initialize first active link style
-        document.querySelector('.nav-module-link.active').style.background = 'var(--primary-50)';
-        document.querySelector('.nav-module-link.active').style.color = 'var(--primary)';
+        // Initialize first active link style or persist tab based on URL
+        function activateTab(targetId) {
+            navLinks.forEach(l => {
+                l.classList.remove('active');
+                l.style.background = 'transparent';
+                l.style.color = 'var(--text-light)';
+            });
+            sections.forEach(s => s.classList.remove('active'));
+
+            const link = document.querySelector(`.nav-module-link[data-target="${targetId}"]`);
+            if (link) {
+                link.classList.add('active');
+                link.style.background = 'var(--primary-50)';
+                link.style.color = 'var(--primary)';
+            }
+            const section = document.getElementById(targetId);
+            if (section) {
+                section.classList.add('active');
+            }
+        }
+
+        // Check URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('filter_date') || urlParams.has('filter_user_id') || urlParams.has('manual_update')) {
+            activateTab('module-attendance');
+        } else {
+             // Default init
+            document.querySelector('.nav-module-link.active').style.background = 'var(--primary-50)';
+            document.querySelector('.nav-module-link.active').style.color = 'var(--primary)';
+        }
 
 
         // Admin JS Logic (Cleaned up)
