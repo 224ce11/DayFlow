@@ -165,7 +165,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['manual_update'])) {
                                 $filter_date = $_GET['filter_date'] ?? date('Y-m-d');
                                 $filter_user_id = $_GET['filter_user_id'] ?? '';
                                 
-                                $att_sql = "SELECT u.full_name, u.login_id, a.check_in_time, a.check_out_time, a.status as att_status, l.status as leave_status 
+                                $att_sql = "SELECT u.id as user_id_actual, u.full_name, u.login_id, a.check_in_time, a.check_out_time, a.status as att_status, l.status as leave_status 
                                             FROM users u 
                                             LEFT JOIN attendance a ON u.id = a.user_id AND a.date = ? 
                                             LEFT JOIN leave_requests l ON u.id = l.user_id AND ? BETWEEN l.from_date AND l.to_date AND l.status = 'Approved'
@@ -201,7 +201,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['manual_update'])) {
                                         elseif ($status == 'Leave') $statusColor = 'var(--accent)';
 
                                         echo "<tr style='border-bottom: 1px solid #f1f5f9;'>";
-                                        echo "<td style='padding: 12px;'><strong>" . htmlspecialchars($row['full_name']) . "</strong><br><span style='font-size:12px; color:#888;'>" . $row['login_id'] . "</span></td>";
+                                        echo "<td style='padding: 12px;'><a href='profile.php?id=" . $row['user_id_actual'] . "' style='color: inherit; text-decoration: none;'><strong>" . htmlspecialchars($row['full_name']) . "</strong></a><br><span style='font-size:12px; color:#888;'>" . $row['login_id'] . "</span></td>";
                                         echo "<td style='padding: 12px;'>" . date("M j", strtotime($filter_date)) . "</td>";
                                         echo "<td style='padding: 12px;'>" . ($row['check_in_time'] ? date("h:i A", strtotime($row['check_in_time'])) : '-') . "</td>";
                                         echo "<td style='padding: 12px;'>" . ($row['check_out_time'] ? date("h:i A", strtotime($row['check_out_time'])) : '-') . "</td>";
