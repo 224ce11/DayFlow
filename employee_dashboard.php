@@ -151,11 +151,50 @@ $check_in_time = null;
                 <!-- MODULE: ATTENDANCE -->
                 <div id="module-attendance" class="module-section">
                     <div class="card">
-                        <h3 style="margin-bottom: 20px;">My Daily Attendance</h3>
-                        <div class="message-box success" style="margin-bottom: 20px;">
-                            <i class="fa fa-info-circle"></i> Today is <?php echo date("l, F j, Y"); ?>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>My Attendance History</h3>
+                            <span class="badge badge-primary">Last 7 Days</span>
                         </div>
-                        <p style="color: var(--text-light); text-align: center; padding: 40px;">No attendance records found for today.</p>
+                        
+                        <div class="table-responsive">
+                            <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8fafc; text-align: left;">
+                                        <th style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Date</th>
+                                        <th style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Check In</th>
+                                        <th style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Check Out</th>
+                                        <th style="padding: 12px; border-bottom: 2px solid #e2e8f0;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $att_q = $conn->prepare("SELECT date, check_in_time, check_out_time, status FROM attendance WHERE user_id = ? ORDER BY date DESC LIMIT 7");
+                                    $att_q->bind_param("i", $user_id);
+                                    $att_q->execute();
+                                    $att_res = $att_q->get_result();
+                                    
+                                    if ($att_res->num_rows > 0) {
+                                        while ($row = $att_res->fetch_assoc()) {
+                                            $statusColor = 'var(--text-light)';
+                                            if ($row['status'] == 'Present') $statusColor = 'var(--success)';
+                                            elseif ($row['status'] == 'Absent') $statusColor = 'var(--danger)';
+                                            elseif ($row['status'] == 'Half-day') $statusColor = 'var(--warning)';
+                                            elseif ($row['status'] == 'Leave') $statusColor = 'var(--info)';
+
+                                            echo "<tr style='border-bottom: 1px solid #f1f5f9;'>";
+                                            echo "<td style='padding: 12px;'>" . date("M j, Y", strtotime($row['date'])) . "</td>";
+                                            echo "<td style='padding: 12px;'>" . ($row['check_in_time'] ? date("h:i A", strtotime($row['check_in_time'])) : '--:--') . "</td>";
+                                            echo "<td style='padding: 12px;'>" . ($row['check_out_time'] ? date("h:i A", strtotime($row['check_out_time'])) : '--:--') . "</td>";
+                                            echo "<td style='padding: 12px;'><span style='color: white; background: {$statusColor}; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;'>" . $row['status'] . "</span></td>";
+                                            echo "</tr>";
+                                        }
+                                    } else {
+                                        echo "<tr><td colspan='4' style='padding: 20px; text-align: center; color: var(--text-light);'>No records found.</td></tr>";
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -224,64 +263,118 @@ $check_in_time = null;
         document.querySelector('.nav-module-link.active').style.color = 'var(--primary)';
 
 
-        // --- Client-side Simulation Logic (Attendance Widget) ---
+        // --- Real Attendance Logic ---
         const toggleBtn = document.getElementById('attendanceToggle');
         const timerDisplay = document.getElementById('timeCounter');
-        let isCheckedIn = false;
-        let startTime = 0;
         let timerInterval;
+        let startTime = 0;
 
-        // User-specific storage keys
-        const userId = "<?php echo $user_id; ?>"; 
-        const storageKeyStatus = 'sim_isCheckedIn_' + userId;
-        const storageKeyTime = 'sim_startTime_' + userId;
+        function fetchStatus() {
+            const formData = new FormData();
+            formData.append('action', 'get_status');
 
-        // Restore state from local storage (Simulation persistence)
-        if (localStorage.getItem(storageKeyStatus) === 'true') {
-            isCheckedIn = true;
-            startTime = parseInt(localStorage.getItem(storageKeyTime));
-            toggleBtn.classList.add('checked-in');
-            toggleBtn.title = "Check Out";
-            startTimer();
+            fetch('attendance_actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.checked_in) {
+                        // User is currently checked in
+                        toggleBtn.classList.add('checked-in');
+                        toggleBtn.innerHTML = '<i class="fa fa-power-off"></i>';
+                        toggleBtn.title = "Check Out";
+                        
+                        // Parse time (HH:MM:SS) to calculate duration
+                        // Assuming check_in_time is server time today
+                        const today = new Date(); // Local browser time
+                        // Aligning with server time is complex without timezone sync, 
+                        // but for UI duration we can approximate or just show static Start Time.
+                        // Let's showing running duration from start time
+                        
+                        const [hours, minutes, seconds] = data.check_in_time.split(':');
+                        const checkInDate = new Date();
+                        checkInDate.setHours(hours, minutes, seconds);
+                        
+                        startTime = checkInDate.getTime();
+                        startTimer();
+
+                    } else if (data.checked_out) {
+                        // User checked out today
+                        toggleBtn.classList.remove('checked-in');
+                        toggleBtn.disabled = true;
+                        toggleBtn.style.opacity = '0.5';
+                        toggleBtn.title = "Checked Out for Today";
+                        timerDisplay.innerText = "Completed";
+                        stopTimer();
+                    } else {
+                        // Not checked in yet
+                        toggleBtn.classList.remove('checked-in');
+                        toggleBtn.title = "Check In";
+                        timerDisplay.innerText = "00:00:00";
+                        stopTimer();
+                    }
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                // Alert only if manual interaction or specific error handling needed. 
+                // For init, maybe just log? 
+                // If the user says "nothing happening", let's alert to help debug.
+                // alert("Failed to load attendance status via AJAX.");
+            });
         }
 
         toggleBtn.addEventListener('click', function() {
-            if (!isCheckedIn) {
-                // Check In
-                isCheckedIn = true;
-                startTime = new Date().getTime();
-                localStorage.setItem(storageKeyStatus, 'true');
-                localStorage.setItem(storageKeyTime, startTime);
-                toggleBtn.classList.add('checked-in');
-                toggleBtn.title = "Check Out";
-                startTimer();
-            } else {
-                // Check Out
-                isCheckedIn = false;
-                localStorage.removeItem(storageKeyStatus);
-                localStorage.removeItem(storageKeyTime);
-                toggleBtn.classList.remove('checked-in');
-                toggleBtn.title = "Check In";
-                stopTimer();
-                timerDisplay.innerText = "00:00:00";
+            if (this.disabled) return;
+            
+            const isCheckingOut = this.classList.contains('checked-in');
+            const action = isCheckingOut ? 'check_out' : 'check_in';
+            
+            if (isCheckingOut && !confirm("Are you sure you want to check out? This will end your attendance for today.")) {
+                return;
             }
+
+            const formData = new FormData();
+            formData.append('action', action);
+
+            fetch('attendance_actions.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                   // Reload to update PHP table and status
+                   location.reload(); 
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("An error occurred. Please try again.");
+            });
         });
 
         function startTimer() {
-            // Update immediately
+            if (timerInterval) clearInterval(timerInterval);
             updateDisplay();
             timerInterval = setInterval(updateDisplay, 1000);
         }
 
         function stopTimer() {
-            clearInterval(timerInterval);
+            if (timerInterval) clearInterval(timerInterval);
         }
 
         function updateDisplay() {
-            if (!isCheckedIn) return;
-            
             let now = new Date().getTime();
+            // Handle day rollover if needed, for now assume same day
             let diff = now - startTime;
+            
+            // Should verify diff is positive (server time vs client time sync issue)
+            if (diff < 0) diff = 0; 
 
             let hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             let minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -292,6 +385,9 @@ $check_in_time = null;
                 (minutes < 10 ? "0" + minutes : minutes) + ":" + 
                 (seconds < 10 ? "0" + seconds : seconds);
         }
+
+        // Initialize
+        fetchStatus();
     </script>
 </body>
 </html>
