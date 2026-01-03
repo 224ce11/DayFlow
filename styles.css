@@ -1167,312 +1167,520 @@ a:hover {
     .feature-card {
         padding: 32px 24px;
     }
+}
 
+/* --- Dashboard Layout --- */
+.dashboard-wrapper {
+    display: flex;
+    min-height: 100vh;
+    background: var(--light-bg);
+    padding-top: 80px;
+    /* Space for Fixed Navbar */
+}
 
-    /* --- Dashboard Layout --- */
-    .dashboard-wrapper {
-        display: flex;
-        min-height: 100vh;
-        background: var(--light-bg);
-        padding-top: 80px;
-        /* Space for Fixed Navbar */
+/* Sidebar */
+.sidebar {
+    width: 260px;
+    background: var(--darker-bg);
+    color: var(--text-lighter);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 0;
+    position: fixed;
+    height: calc(100vh - 80px);
+    /* Fill space below navbar */
+    left: 0;
+    top: 80px;
+    /* Start below navbar */
+    z-index: 900;
+    /* Below Navbar (1000) */
+}
+
+.sidebar-header {
+    display: none;
+    /* Logo is in Navbar now */
+}
+
+.sidebar-brand {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+}
+
+.sidebar-menu {
+    list-style: none;
+    flex: 1;
+}
+
+.menu-item {
+    margin-bottom: 4px;
+}
+
+.menu-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    color: var(--text-lighter);
+    text-decoration: none;
+    transition: all var(--transition-base);
+    font-weight: 500;
+    border-left: 3px solid transparent;
+}
+
+.menu-link:hover,
+.menu-link.active {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--white);
+}
+
+.menu-link.active {
+    border-left-color: var(--primary);
+}
+
+.menu-icon {
+    width: 20px;
+    text-align: center;
+}
+
+/* Main Content Area */
+.main-content {
+    flex: 1;
+    margin-left: 260px;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 80px);
+}
+
+/* Dashboard Header (Use Navbar Instead) */
+.dashboard-header {
+    display: none;
+}
+
+.header-left h2 {
+    font-size: 20px;
+    margin: 0;
+    color: var(--text-dark);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.attendance-widget {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--surface-50);
+    padding: 8px 16px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-color);
+}
+
+.time-counter {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 16px;
+}
+
+.check-in-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ef4444;
+    /* Red for Checked Out */
+    color: white;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.check-in-btn.checked-in {
+    background: #10b981;
+    /* Green for Checked In */
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+}
+
+.check-in-btn:hover {
+    transform: scale(1.1);
+}
+
+.check-in-btn i {
+    font-size: 16px;
+}
+
+/* --- Dashboard Module System --- */
+.module-section {
+    display: none;
+    animation: fadeIn 0.4s ease;
+}
+
+.module-section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
     }
 
-    /* Sidebar */
-    .sidebar {
-        width: 260px;
-        background: var(--darker-bg);
-        color: var(--text-lighter);
-        display: flex;
-        flex-direction: column;
-        padding: 24px 0;
-        position: fixed;
-        height: calc(100vh - 80px);
-        /* Fill space below navbar */
-        left: 0;
-        top: 80px;
-        /* Start below navbar */
-        z-index: 900;
-        /* Below Navbar (1000) */
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
+}
 
-    .sidebar-header {
-        display: none;
-        /* Logo is in Navbar now */
-    }
+/* Enhanced Table Styling (Odoo List View) */
+.table-container {
+    overflow-x: auto;
+}
 
-    .sidebar-brand {
-        font-size: 22px;
-        font-weight: 700;
-        color: var(--white);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        text-decoration: none;
-    }
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
 
-    .sidebar-menu {
-        list-style: none;
-        flex: 1;
-    }
+th {
+    background: #f9fafb;
+    color: var(--text-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    padding: 16px;
+    text-align: left;
+    border-bottom: 2px solid #e5e7eb;
+}
 
-    .menu-item {
-        margin-bottom: 4px;
-    }
+td {
+    padding: 16px;
+    border-bottom: 1px solid #f3f4f6;
+    color: var(--text-dark);
+    font-size: 14px;
+    vertical-align: middle;
+}
 
-    .menu-link {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 24px;
-        color: var(--text-lighter);
-        text-decoration: none;
-        transition: all var(--transition-base);
-        font-weight: 500;
-        border-left: 3px solid transparent;
-    }
+tr:hover td {
+    background: #f9fafb;
+}
 
-    .menu-link:hover,
-    .menu-link.active {
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--white);
-    }
+tr:last-child td {
+    border-bottom: none;
+}
 
-    .menu-link.active {
-        border-left-color: var(--primary);
-    }
+/* Enhanced Form Styling (Odoo Form View) */
+.odoo-form {
+    display: grid;
+    gap: 24px;
+}
 
-    .menu-icon {
-        width: 20px;
-        text-align: center;
-    }
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 24px;
+}
 
-    /* Main Content Area */
-    .main-content {
-        flex: 1;
-        margin-left: 260px;
-        display: flex;
-        flex-direction: column;
-        min-height: calc(100vh - 80px);
-    }
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
 
-    /* Dashboard Header (Use Navbar Instead) */
-    .dashboard-header {
-        display: none;
-    }
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    color: var(--text-dark);
+    transition: all 0.2s;
+    background: #fff;
+}
 
-    .header-left h2 {
-        font-size: 20px;
-        margin: 0;
-        color: var(--text-dark);
-    }
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 113, 75, 103), 0.1);
+    outline: none;
+}
 
-    .header-right {
-        display: flex;
-        align-items: center;
-        gap: 24px;
-    }
+/* Status Badge */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 600;
+}
 
-    .attendance-widget {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        background: var(--surface-50);
-        padding: 8px 16px;
-        border-radius: var(--radius-full);
-        border: 1px solid var(--border-color);
-    }
+.status-active {
+    background: #dcfce7;
+    color: #166534;
+}
 
-    .time-counter {
-        font-family: 'Courier New', monospace;
-        font-weight: 600;
-        color: var(--text-dark);
-        font-size: 16px;
-    }
+.status-pending {
+    background: #fef9c3;
+    color: #854d0e;
+}
 
-    .check-in-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #ef4444;
-        /* Red for Checked Out */
-        color: white;
-        box-shadow: var(--shadow-sm);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+/* --- Final Layout Overrides for Header Navigation --- */
+.dashboard-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--light-bg);
+    padding-top: 80px;
+    margin-left: 0 !important;
+}
 
-    .check-in-btn.checked-in {
-        background: #10b981;
-        /* Green for Checked In */
-        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
-    }
+.sidebar {
+    display: none !important;
+}
 
-    .check-in-btn:hover {
-        transform: scale(1.1);
-    }
+.main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+}
 
-    .check-in-btn i {
-        font-size: 16px;
-    }
+.nav-module-link {
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text-light);
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 
-    /* --- Dashboard Module System --- */
-    .module-section {
-        display: none;
-        animation: fadeIn 0.4s ease;
-    }
+.nav-module-link:hover {
+    background: var(--surface-100);
+    color: var(--primary);
+}
 
-    .module-section.active {
-        display: block;
-    }
+/* --- Employee Slider (YouTube Style) --- */
 
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
+.employee-slider-wrapper {
+    position: relative;
+    padding: 0 48px;
+    /* Space for arrows */
+}
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
+.employee-slider {
+    display: flex;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    gap: 24px;
+    padding: 24px 4px;
+    /* Top/bottom padding for hover space */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
+}
 
-    /* Enhanced Table Styling (Odoo List View) */
-    .table-container {
-        overflow-x: auto;
-    }
+.employee-slider::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+}
 
-    table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-    }
+.employee-card.yt-style {
+    width: 320px;
+    /* Fixed width for uniformity */
+    min-width: 320px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    text-align: left;
+    position: relative;
+    transition: none;
+    box-shadow: none;
+    overflow: visible;
+    flex: 0 0 auto;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
 
-    th {
-        background: #f9fafb;
-        color: var(--text-light);
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 12px;
-        letter-spacing: 0.05em;
-        padding: 16px;
-        text-align: left;
-        border-bottom: 2px solid #e5e7eb;
-    }
+/* Thumbnail */
+.yt-thumbnail {
+    width: 100%;
+    height: 180px;
+    /* Fixed height for uniformity */
+    aspect-ratio: 16/9;
+    border-radius: 12px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    transition: border-radius 0s;
+    /* Instant usually, but let's keep it simple */
+    overflow: hidden;
+}
 
-    td {
-        padding: 16px;
-        border-bottom: 1px solid #f3f4f6;
-        color: var(--text-dark);
-        font-size: 14px;
-        vertical-align: middle;
-    }
+.employee-card.yt-style:hover .yt-thumbnail {
+    border-radius: 0;
+    /* YouTube expanding effect usually squares it, but let's just keep rounded or make it sharper */
+}
 
-    tr:hover td {
-        background: #f9fafb;
-    }
+.thumb-content {
+    font-size: 48px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: -1px;
+    mix-blend-mode: overlay;
+}
 
-    tr:last-child td {
-        border-bottom: none;
-    }
+.duration-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 6px;
+    border-radius: 4px;
+}
 
-    /* Enhanced Form Styling (Odoo Form View) */
-    .odoo-form {
-        display: grid;
-        gap: 24px;
-    }
+/* Details Section */
+.yt-details {
+    display: flex;
+    gap: 12px;
+    padding-right: 24px;
+    /* Space for menu dots */
+    position: relative;
+}
 
-    .form-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 24px;
-    }
+.channel-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
 
-    .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-light);
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-    }
+.yt-text-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
 
-    .form-control {
-        width: 100%;
-        padding: 12px 16px;
-        border: 1px solid #d1d5db;
-        border-radius: var(--radius-md);
-        font-size: 15px;
-        color: var(--text-dark);
-        transition: all 0.2s;
-        background: #fff;
-    }
+.yt-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-main);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
+}
 
-    .form-control:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 113, 75, 103), 0.1);
-        outline: none;
-    }
+.yt-channel-name,
+.yt-meta {
+    font-size: 14px;
+    color: #606060;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    line-height: 1.2;
+}
 
-    /* Status Badge */
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 4px 12px;
-        border-radius: 99px;
-        font-size: 12px;
-        font-weight: 600;
-    }
+[data-theme="dark"] .yt-title {
+    color: #f1f1f1;
+}
 
-    .status-active {
-        background: #dcfce7;
-        color: #166534;
-    }
+[data-theme="dark"] .yt-channel-name,
+[data-theme="dark"] .yt-meta {
+    color: #aaaaaa;
+}
 
-    .status-pending {
-        background: #fef9c3;
-        color: #854d0e;
-    }
+.dot-separator {
+    margin: 0 4px;
+    font-weight: bold;
+}
 
-    /* --- Final Layout Overrides for Header Navigation --- */
-    .dashboard-wrapper {
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-        background: var(--light-bg);
-        padding-top: 80px;
-        margin-left: 0 !important;
-    }
+.yt-menu-dots {
+    position: absolute;
+    top: 0;
+    right: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+    color: var(--text-main);
+    padding: 8px;
+    cursor: pointer;
+}
 
-    .sidebar {
-        display: none !important;
-    }
+.employee-card.yt-style:hover .yt-menu-dots {
+    opacity: 1;
+}
 
-    .main-content {
-        margin-left: 0 !important;
-        width: 100% !important;
-    }
+/* Scroll Buttons */
+.slider-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    color: var(--text-main);
+    transition: all 0.2s;
+}
 
-    .nav-module-link {
-        font-size: 14px;
-        padding: 8px 16px;
-        border-radius: 6px;
-        text-decoration: none;
-        color: var(--text-light);
-        font-weight: 500;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
+.slider-nav:hover {
+    background: var(--surface-100);
+}
 
-    .nav-module-link:hover {
-        background: var(--surface-100);
-        color: var(--primary);
-    }
+.prev-btn {
+    left: 0;
+}
+
+.next-btn {
+    right: 0;
+}
+
+/* Remove old card styles if present to avoid conflicts */
+.card-header,
+.card-body,
+.info-group,
+.card-hover-overlay {
+    display: none !important;
+}

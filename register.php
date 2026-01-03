@@ -41,11 +41,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $message = "Email already registered.";
                 $messageType = "error";
             } else {
-                // Generate Login ID (Simple Format)
-                $prefix = "EMP";
+                // Generate Login ID (Company Prefix: Initials of first 2 words)
+                $company_name_input = isset($_POST['company_name']) ? $_POST['company_name'] : 'Internal';
+                $co_parts = explode(' ', trim($company_name_input));
+                $prefix = '';
+                
+                if (count($co_parts) >= 2) {
+                    // First letter of first word + First letter of second word (e.g., Odoo India -> OI)
+                    $prefix = strtoupper(substr($co_parts[0], 0, 1) . substr($co_parts[1], 0, 1));
+                } else {
+                    // Fallback to first 2 letters if single word
+                    $prefix = strtoupper(substr($company_name_input, 0, 2));
+                }
+                
                 $name_parts = explode(' ', trim($full_name));
                 $fname = $name_parts[0];
                 $lname = (count($name_parts) > 1) ? end($name_parts) : $fname;
+                
+                // First 2 of Firstname + First 2 of Lastname
                 $name_code = strtoupper(substr($fname, 0, 2) . substr($lname, 0, 2));
                 if (strlen($name_code) < 4) $name_code = str_pad($name_code, 4, "X"); 
                 
@@ -54,6 +67,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $row = $c_stmt->fetch_assoc();
                 $serial = str_pad($row['count'] + 1, 4, '0', STR_PAD_LEFT);
                 
+                // New Format: CO + JODO + YEAR + SERIAL
                 $login_id = $prefix . $name_code . $year . $serial;
                 $role = 'employee';
 
