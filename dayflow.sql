@@ -70,6 +70,79 @@ ALTER TABLE `users`
 --
 ALTER TABLE `users`
   MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- Table structure for table `salary_structures`
+--
+
+CREATE TABLE `salary_structures` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `user_id` int(11) UNSIGNED NOT NULL,
+  `basic_salary` decimal(10,2) DEFAULT 0.00,
+  `hra` decimal(10,2) DEFAULT 0.00,
+  `allowances` decimal(10,2) DEFAULT 0.00,
+  `deductions` decimal(10,2) DEFAULT 0.00,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Table structure for table `payroll_records`
+--
+
+CREATE TABLE `payroll_records` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `user_id` int(11) UNSIGNED NOT NULL,
+  `month` int(2) NOT NULL,
+  `year` int(4) NOT NULL,
+  `basic_salary` decimal(10,2) NOT NULL,
+  `hra` decimal(10,2) NOT NULL,
+  `allowances` decimal(10,2) NOT NULL,
+  `deductions` decimal(10,2) NOT NULL,
+  `net_pay` decimal(10,2) NOT NULL,
+  `status` enum('pending','paid') DEFAULT 'pending',
+  `payment_date` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Indexes for table `salary_structures`
+--
+ALTER TABLE `salary_structures`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_salary` (`user_id`);
+
+--
+-- Indexes for table `payroll_records`
+--
+ALTER TABLE `payroll_records`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- AUTO_INCREMENT for table `salary_structures`
+--
+ALTER TABLE `salary_structures`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `payroll_records`
+--
+ALTER TABLE `payroll_records`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- Constraints for table `salary_structures`
+--
+ALTER TABLE `salary_structures`
+  ADD CONSTRAINT `fk_salary_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `payroll_records`
+--
+ALTER TABLE `payroll_records`
+  ADD CONSTRAINT `fk_payroll_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
