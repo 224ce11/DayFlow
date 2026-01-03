@@ -223,7 +223,7 @@ if (isset($_GET['action']) && isset($_GET['leave_id']) && isset($_GET['status'])
                                             </div>
                                             <div class="yt-text-info">
                                                 <h3 class="yt-title" title="<?php echo htmlspecialchars($row['full_name']); ?>">
-                                                    <a href="admin_employee_details.php?id=<?php echo $row['id']; ?>" style="color: inherit; text-decoration: none;">
+                                                    <a href="profile.php?id=<?php echo $row['id']; ?>" style="color: inherit; text-decoration: none;">
                                                         <?php echo htmlspecialchars($row['full_name']); ?>
                                                     </a>
                                                 </h3>
