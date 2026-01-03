@@ -4,7 +4,7 @@ $username = "root";
 $password = "";
 $dbname = "dayflow";
 
-// Create connection
+
 $conn = new mysqli($servername, $username, $password, $dbname);
 
 // Check connection
