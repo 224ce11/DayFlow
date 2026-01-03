@@ -167,12 +167,54 @@ $check_in_time = null;
                 <!-- MODULE: ATTENDANCE -->
                 <div id="module-attendance" class="module-section">
                     <div class="card">
-                        <h3 style="margin-bottom: 20px;">My Daily Attendance</h3>
-                        <div class="message-box success" style="margin-bottom: 20px;">
-                            <i class="fa fa-info-circle"></i> Today is <?php echo date("l, F j, Y"); ?>
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="margin: 0;">My Daily Attendance</h3>
+                            <button onclick="openLeaveModal()" class="btn btn-sm btn-outline">
+                                <i class="fa fa-calendar-plus"></i> Request Leave
+                            </button>
                         </div>
-                        <p style="color: var(--text-light); text-align: center; padding: 40px;">No attendance records
-                            found for today.</p>
+                        
+                        <div class="table-responsive">
+                            <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: var(--surface-50); text-align: left;">
+                                        <th style="padding: 12px; border-radius: 8px 0 0 8px;">Date</th>
+                                        <th style="padding: 12px;">Check In</th>
+                                        <th style="padding: 12px;">Check Out</th>
+                                        <th style="padding: 12px; border-radius: 0 8px 8px 0;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $hist_q = $conn->prepare("SELECT date, check_in_time, check_out_time, status FROM attendance WHERE user_id = ? ORDER BY date DESC LIMIT 7");
+                                    $hist_q->bind_param("i", $user_id);
+                                    $hist_q->execute();
+                                    $hist_res = $hist_q->get_result();
+                                    
+                                    if ($hist_res->num_rows > 0) {
+                                        while ($row = $hist_res->fetch_assoc()) {
+                                            $statusColor = 'var(--text-light)';
+                                            if ($row['status'] == 'Present') $statusColor = 'var(--success)';
+                                            elseif ($row['status'] == 'Absent') $statusColor = 'var(--error)';
+                                            elseif ($row['status'] == 'Half-day') $statusColor = 'var(--warning)';
+                                            elseif ($row['status'] == 'Leave') $statusColor = 'var(--accent)';
+                                            
+                                            echo "<tr style='border-bottom: 1px solid var(--surface-100);'>";
+                                            echo "<td style='padding: 12px;'>" . date("M j, Y", strtotime($row['date'])) . "</td>";
+                                            echo "<td style='padding: 12px; font-family: monospace;'>" . ($row['check_in_time'] ? date("h:i A", strtotime($row['check_in_time'])) : '-') . "</td>";
+                                            echo "<td style='padding: 12px; font-family: monospace;'>" . ($row['check_out_time'] ? date("h:i A", strtotime($row['check_out_time'])) : '-') . "</td>";
+                                            echo "<td style='padding: 12px;'><span style='color: $statusColor; font-weight: 600;'>" . $row['status'] . "</span></td>";
+                                            echo "</tr>";
+                                        }
+                                    } else {
+                                        echo "<tr><td colspan='4' style='padding: 20px; text-align: center; color: var(--text-light);'>No recent attendance records.</td></tr>";
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                     </div>
                 </div>
 
@@ -188,21 +230,28 @@ $check_in_time = null;
                 <!-- MODULE: REPORTS -->
                 <div id="module-reports" class="module-section">
                     <div class="card">
+                    <div class="card">
                         <h3 style="margin-bottom: 20px;">Performance Reports</h3>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                            <?php
+                            // Get Stats
+                            $present_q = $conn->query("SELECT count(*) as c FROM attendance WHERE user_id = $user_id AND status = 'Present'");
+                            $present_c = $present_q->fetch_assoc()['c'];
+                            
+                            $leave_q = $conn->query("SELECT count(*) as c FROM attendance WHERE user_id = $user_id AND status = 'Leave'");
+                            $leave_c = $leave_q->fetch_assoc()['c'];
+                            ?>
                             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; text-align: center;">
-                                <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">Days Present
-                                </h4>
-                                <div style="font-size: 24px; font-weight: 700; color: var(--primary);">0</div>
+                                <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">Days Present</h4>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--primary);"><?php echo $present_c; ?></div>
                             </div>
                             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; text-align: center;">
-                                <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">Leaves Taken
-                                </h4>
-                                <div style="font-size: 24px; font-weight: 700; color: var(--warning);">0</div>
+                                <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">Leaves Taken</h4>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--warning);"><?php echo $leave_c; ?></div>
                             </div>
                             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; text-align: center;">
                                 <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">Overtime</h4>
-                                <div style="font-size: 24px; font-weight: 700; color: var(--success);">0h</div>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--success);">0h</div> <!-- Placeholder for now -->
                             </div>
                         </div>
                     </div>
@@ -210,6 +259,33 @@ $check_in_time = null;
 
             </div>
         </main>
+            </div>
+        </main>
+    </div>
+
+    <!-- Leave Request Modal -->
+    <div id="leaveModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+        <div class="card" style="width: 100%; max-width: 500px; padding: 30px;">
+            <h3 style="margin-bottom: 20px;">Apply for Leave</h3>
+            <form id="leaveForm">
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:500;">From Date</label>
+                    <input type="date" name="from_date" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:500;">To Date</label>
+                    <input type="date" name="to_date" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:500;">Reason</label>
+                    <textarea name="reason" required rows="3" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;"></textarea>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" onclick="closeLeaveModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Request</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="style.js"></script>
@@ -244,74 +320,109 @@ $check_in_time = null;
         document.querySelector('.nav-module-link.active').style.color = 'var(--primary)';
 
 
-        // --- Client-side Simulation Logic (Attendance Widget) ---
+        // --- Real-Time Attendance Logic ---
         const toggleBtn = document.getElementById('attendanceToggle');
         const timerDisplay = document.getElementById('timeCounter');
         let isCheckedIn = false;
         let startTime = 0;
         let timerInterval;
 
-        // User-specific storage keys
-        const userId = "<?php echo $user_id; ?>";
-        const storageKeyStatus = 'sim_isCheckedIn_' + userId;
-        const storageKeyTime = 'sim_startTime_' + userId;
-
-        // Restore state from local storage (Simulation persistence)
-        if (localStorage.getItem(storageKeyStatus) === 'true') {
-            isCheckedIn = true;
-            startTime = parseInt(localStorage.getItem(storageKeyTime));
-            toggleBtn.classList.add('checked-in');
-            toggleBtn.title = "Check Out";
-            startTimer();
-        }
-
-        toggleBtn.addEventListener('click', function () {
-            if (!isCheckedIn) {
-                // Check In
-                isCheckedIn = true;
-                startTime = new Date().getTime();
-                localStorage.setItem(storageKeyStatus, 'true');
-                localStorage.setItem(storageKeyTime, startTime);
-                toggleBtn.classList.add('checked-in');
-                toggleBtn.title = "Check Out";
-                startTimer();
-            } else {
-                // Check Out
-                isCheckedIn = false;
-                localStorage.removeItem(storageKeyStatus);
-                localStorage.removeItem(storageKeyTime);
-                toggleBtn.classList.remove('checked-in');
-                toggleBtn.title = "Check In";
-                stopTimer();
-                timerDisplay.innerText = "00:00:00";
-            }
-        });
-
-        function startTimer() {
-            // Update immediately
-            updateDisplay();
-            timerInterval = setInterval(updateDisplay, 1000);
-        }
-
-        function stopTimer() {
-            clearInterval(timerInterval);
-        }
-
-        function updateDisplay() {
+        function updateTimerDisplay() {
             if (!isCheckedIn) return;
-
-            let now = new Date().getTime();
+            let now = new Date().getTime(); // UTC/Local mix issues possible, but usually fine for simple duration
+            
+            // Adjust: startTime comes from PHP as "HH:mm:ss" string typically.
+            // We need to sync with server time. For simplicity, we just count up from fetch
+            // But to be accurate, we should parse the startTime.
+            
+            // Simplified display for now: just re-fetch or rely on server time?
+            // Let's rely on client-side counting for UX, synced on load.
+            
             let diff = now - startTime;
+            if (diff < 0) diff = 0;
 
             let hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             let minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             let seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-            timerDisplay.innerText =
-                (hours < 10 ? "0" + hours : hours) + ":" +
-                (minutes < 10 ? "0" + minutes : minutes) + ":" +
+            timerDisplay.innerText = 
+                (hours < 10 ? "0" + hours : hours) + ":" + 
+                (minutes < 10 ? "0" + minutes : minutes) + ":" + 
                 (seconds < 10 ? "0" + seconds : seconds);
         }
+
+        function fetchStatus() {
+            const fd = new FormData();
+            fd.append('action', 'get_status');
+            fetch('attendance_actions.php', { method: 'POST', body: fd })
+            .then(res => res.json())
+            .then(data => {
+                if (data.checked_in && !data.checked_out) {
+                    isCheckedIn = true;
+                    // Parse check_in_time (HH:mm:ss) to timestamp for timer
+                    // Assume check_in_time is today.
+                    const today = new Date();
+                    const [h, m, s] = data.check_in_time.split(':');
+                    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, m, s).getTime();
+                    startTime = start;
+                    
+                    toggleBtn.classList.add('checked-in');
+                    toggleBtn.title = "Check Out (Status: " + data.status + ")";
+                    
+                    clearInterval(timerInterval);
+                    timerInterval = setInterval(updateTimerDisplay, 1000);
+                } else {
+                    isCheckedIn = false;
+                    toggleBtn.classList.remove('checked-in');
+                    toggleBtn.title = "Check In";
+                    clearInterval(timerInterval);
+                    timerDisplay.innerText = "00:00:00";
+                }
+            });
+        }
+
+        // Init
+        fetchStatus();
+
+        toggleBtn.addEventListener('click', function() {
+            const action = isCheckedIn ? 'check_out' : 'check_in';
+            if(confirm("Are you sure you want to " + (isCheckedIn ? "Check Out?" : "Check In?"))) {
+                const fd = new FormData();
+                fd.append('action', action);
+                fetch('attendance_actions.php', { method: 'POST', body: fd })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message);
+                    if (data.success) {
+                        fetchStatus(); // Reload status and timer
+                        if(action === 'check_out') setTimeout(() => location.reload(), 1000); // Reload to show in table
+                    }
+                });
+            }
+        });
+
+        // Leave Modal Logic
+        function openLeaveModal() {
+            document.getElementById('leaveModal').style.display = 'flex';
+        }
+        function closeLeaveModal() {
+            document.getElementById('leaveModal').style.display = 'none';
+        }
+        document.getElementById('leaveForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const fd = new FormData(this);
+            fd.append('action', 'apply_leave');
+            
+            fetch('attendance_actions.php', { method: 'POST', body: fd })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                if (data.success) {
+                    closeLeaveModal();
+                    location.reload();
+                }
+            });
+        });
     </script>
 </body>
 
