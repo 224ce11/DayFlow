@@ -69,6 +69,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
             $messageType = "error";
         }
     }
+    }
+// Handle Manual Attendance Update
+// Manual Attendance Update Logic Removed (Moved to admin_attendance.php)
+
+// Handle Leave Status Update
+if (isset($_GET['action']) && isset($_GET['leave_id']) && isset($_GET['status'])) {
+    $l_id = intval($_GET['leave_id']);
+    $l_status = $_GET['status']; // 'Approved' or 'Rejected'
+    if (in_array($l_status, ['Approved', 'Rejected'])) {
+        $upd_l = $conn->prepare("UPDATE leave_requests SET status = ? WHERE id = ?");
+        $upd_l->bind_param("si", $l_status, $l_id);
+        if($upd_l->execute()){
+            $message = "Leave Request $l_status.";
+            $messageType = "success";
+        }
+    }
 }
 ?>
 
@@ -102,17 +118,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
             </div>
 
             <!-- Central Navigation (Header Format) -->
+            <!-- Central Navigation (Header Format) -->
+            <!-- Central Navigation (Header Format) -->
             <div class="nav-menu" style="display: flex; gap: 8px;">
-                <a href="#" class="nav-link nav-module-link active" data-target="module-employees">
+                <a href="#" onclick="switchModule('module-employees'); return false;" class="nav-link nav-module-link active" data-target="module-employees">
                     <i class="fa fa-users"></i> Employees
                 </a>
-                <a href="#" class="nav-link nav-module-link" data-target="module-attendance">
+                <a href="admin_attendance.php" class="nav-link nav-module-link">
                     <i class="fa fa-calendar-check"></i> Attendance
                 </a>
-                <a href="#" class="nav-link nav-module-link" data-target="module-recruitment">
+                <a href="#" onclick="switchModule('module-recruitment'); return false;" class="nav-link nav-module-link" data-target="module-recruitment">
                     <i class="fa fa-briefcase"></i> Recruitment
                 </a>
-                <a href="#" class="nav-link nav-module-link" data-target="module-reports">
+                <a href="#" onclick="switchModule('module-reports'); return false;" class="nav-link nav-module-link" data-target="module-reports">
                     <i class="fa fa-chart-pie"></i> Reports
                 </a>
                 <a href="admin_payroll.php" class="nav-link">
@@ -170,7 +188,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
                     <div class="card" style="margin-top: 0;">
                         <?php
                         // Updated query to remove company_id check
-                        $q = $conn->prepare("SELECT full_name, email, phone, login_id, role FROM users WHERE role = 'employee' ORDER BY created_at DESC");
+                        $q = $conn->prepare("SELECT id, full_name, email, phone, login_id, role FROM users WHERE role = 'employee' ORDER BY created_at DESC");
                         $q->execute();
                         $res = $q->get_result();
                         ?>
@@ -204,9 +222,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
                                                 <?php echo $initials; ?>
                                             </div>
                                             <div class="yt-text-info">
-                                                <h3 class="yt-title"
-                                                    title="<?php echo htmlspecialchars($row['full_name']); ?>">
-                                                    <?php echo htmlspecialchars($row['full_name']); ?>
+                                                <h3 class="yt-title" title="<?php echo htmlspecialchars($row['full_name']); ?>">
+                                                    <a href="admin_employee_details.php?id=<?php echo $row['id']; ?>" style="color: inherit; text-decoration: none;">
+                                                        <?php echo htmlspecialchars($row['full_name']); ?>
+                                                    </a>
                                                 </h3>
                                                 <div class="yt-channel-name">
                                                     <?php echo ucfirst($row['role']); ?> &bull; Active
@@ -226,24 +245,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
                     </div>
                 </div>
 
-                <!-- MODULE: ATTENDANCE -->
-                <div id="module-attendance" class="module-section">
-                    <div class="card">
-                        <h3 style="margin-bottom: 20px;">Daily Attendance</h3>
-                        <div class="message-box success" style="margin-bottom: 20px;">
-                            <i class="fa fa-info-circle"></i> Today is <?php echo date("l, F j, Y"); ?>
-                        </div>
-                        <p style="color: var(--text-light); text-align: center; padding: 40px;">No attendance records
-                            found for today.</p>
-                    </div>
-                </div>
+                <!-- MODULE: ATTENDANCE REMOVED (Moved to admin_attendance.php) -->
 
-                <!-- MODULE: RECRUITMENT -->
+                <!-- MODULE: RECRUITMENT (Also acting as HR Actions) -->
                 <div id="module-recruitment" class="module-section">
                     <div class="card">
-                        <h3 style="margin-bottom: 20px;">Recruitment Pipeline</h3>
-                        <p style="color: var(--text-light); text-align: center; padding: 40px;">No open positions or
-                            applications.</p>
+                        <h3 style="margin-bottom: 20px;">Pending Leave Requests</h3>
+                        <div class="table-responsive">
+                            <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8fafc; text-align: left;">
+                                        <th style="padding: 12px;">Employee</th>
+                                        <th style="padding: 12px;">Dates</th>
+                                        <th style="padding: 12px;">Reason</th>
+                                        <th style="padding: 12px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $l_req = $conn->query("SELECT l.*, u.full_name FROM leave_requests l JOIN users u ON l.user_id = u.id WHERE l.status = 'Pending' ORDER BY l.created_at ASC");
+                                    if ($l_req->num_rows > 0) {
+                                        while ($r = $l_req->fetch_assoc()) {
+                                            echo "<tr style='border-bottom: 1px solid #f1f5f9;'>";
+                                            echo "<td style='padding:12px;'><strong>" . htmlspecialchars($r['full_name']) . "</strong></td>";
+                                            echo "<td style='padding:12px;'>" . date("M j", strtotime($r['from_date'])) . " - " . date("M j", strtotime($r['to_date'])) . "</td>";
+                                            echo "<td style='padding:12px; font-size:13px;'>" . htmlspecialchars($r['reason']) . "</td>";
+                                            echo "<td style='padding:12px;'>
+                                                    <a href='?action=update_leave&leave_id=".$r['id']."&status=Approved' class='btn btn-sm btn-primary' style='padding: 4px 10px; font-size: 12px; background:var(--success); border-color:var(--success);'>Approve</a>
+                                                    <a href='?action=update_leave&leave_id=".$r['id']."&status=Rejected' class='btn btn-sm btn-secondary' style='padding: 4px 10px; font-size: 12px; color:var(--error); border-color:var(--error);'>Reject</a>
+                                                  </td>";
+                                            echo "</tr>";
+                                        }
+                                    } else {
+                                        echo "<tr><td colspan='4' style='padding: 30px; text-align: center; color: var(--text-light);'>No pending leave requests.</td></tr>";
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -263,13 +302,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
                                 </div>
                             </div>
                             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; text-align: center;">
-                                <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">On Time Today
-                                </h4>
-                                <div style="font-size: 24px; font-weight: 700; color: var(--success);">0</div>
+                                <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">Checked In Today</h4>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--success);">
+                                    <?php 
+                                    $td = date('Y-m-d');
+                                    $p = $conn->query("SELECT count(*) as c FROM attendance WHERE date = '$td'"); 
+                                    echo $p->fetch_assoc()['c'];
+                                    ?>
+                                </div>
                             </div>
                             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; text-align: center;">
-                                <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">Absent</h4>
-                                <div style="font-size: 24px; font-weight: 700; color: var(--text-light);">-</div>
+                                <h4 style="font-size: 14px; color: var(--text-light); margin-bottom: 8px;">Pending Leaves</h4>
+                                <div style="font-size: 24px; font-weight: 700; color: var(--warning);">
+                                     <?php 
+                                    $pl = $conn->query("SELECT count(*) as c FROM leave_requests WHERE status = 'Pending'"); 
+                                    echo $pl->fetch_assoc()['c'];
+                                    ?>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -281,115 +330,119 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_employee'])) {
 
     <script src="style.js"></script>
     <script>
-        // --- Module Switching Logic ---
-        const navLinks = document.querySelectorAll('.nav-module-link');
-        const sections = document.querySelectorAll('.module-section');
-
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-
-                // Update Active Link (Navbar Styles)
-                navLinks.forEach(l => {
-                    l.classList.remove('active');
-                    l.style.background = 'transparent';
-                    l.style.color = 'var(--text-light)';
-                });
-                link.classList.add('active');
-                link.style.background = 'var(--primary-50)'; // Inline override or handle in CSS
-                link.style.color = 'var(--primary)';
-
-                // Show Content Section
-                const targetId = link.getAttribute('data-target');
-                sections.forEach(s => s.classList.remove('active'));
-                document.getElementById(targetId).classList.add('active');
+        // Define Global Switch Function
+        window.switchModule = function(targetId) {
+            const navLinks = document.querySelectorAll('.nav-module-link');
+            const sections = document.querySelectorAll('.module-section');
+            
+            // Deactivate all
+            navLinks.forEach(l => {
+                l.classList.remove('active');
+                l.style.background = 'transparent';
+                l.style.color = 'var(--text-light)';
             });
-        });
+            sections.forEach(s => s.classList.remove('active'));
 
-        // Initialize first active link style
-        document.querySelector('.nav-module-link.active').style.background = 'var(--primary-50)';
-        document.querySelector('.nav-module-link.active').style.color = 'var(--primary)';
+            // Activate target
+            const link = document.querySelector(`.nav-module-link[data-target="${targetId}"]`);
+            if (link) {
+                link.classList.add('active');
+                link.style.background = 'var(--primary-50)';
+                link.style.color = 'var(--primary)';
+            }
+            const section = document.getElementById(targetId);
+            if (section) {
+                section.classList.add('active');
+            }
+        };
 
-
-        // --- Client-side Simulation Logic (Attendance Widget) ---
-        const toggleBtn = document.getElementById('attendanceToggle');
-        const timerDisplay = document.getElementById('timeCounter');
-        let isCheckedIn = false;
-        let startTime = 0;
-        let timerInterval;
-
-        // Restore state from local storage (Simulation persistence)
-        if (localStorage.getItem('sim_isCheckedIn') === 'true') {
-            isCheckedIn = true;
-            startTime = parseInt(localStorage.getItem('sim_startTime'));
-            toggleBtn.classList.add('checked-in');
-            toggleBtn.title = "Check Out";
-            startTimer();
-        }
-
-        toggleBtn.addEventListener('click', function () {
-            if (!isCheckedIn) {
-                // Check In
-                isCheckedIn = true;
-                startTime = new Date().getTime();
-                localStorage.setItem('sim_isCheckedIn', 'true');
-                localStorage.setItem('sim_startTime', startTime);
-                toggleBtn.classList.add('checked-in');
-                toggleBtn.title = "Check Out";
-                startTimer();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Initial Tab Selection
+            if (urlParams.has('filter_date') || urlParams.has('filter_user_id') || urlParams.has('manual_update')) {
+                switchModule('module-attendance');
+            } else if (urlParams.has('action') && urlParams.get('action') == 'update_leave') {
+                switchModule('module-recruitment');
             } else {
-                // Check Out
-                isCheckedIn = false;
-                localStorage.removeItem('sim_isCheckedIn');
-                localStorage.removeItem('sim_startTime');
-                toggleBtn.classList.remove('checked-in');
-                toggleBtn.title = "Check In";
-                stopTimer();
-                timerDisplay.innerText = "00:00:00";
+                 switchModule('module-employees'); // Default
+            }
+
+            // --- Client-side Simulation Logic (Attendance Widget) ---
+            const toggleBtn = document.getElementById('attendanceToggle');
+            const timerDisplay = document.getElementById('timeCounter');
+            
+            if (toggleBtn && timerDisplay) {
+                let isCheckedIn = false;
+                let startTime = 0;
+                let timerInterval;
+
+                if (localStorage.getItem('sim_isCheckedIn') === 'true') {
+                    isCheckedIn = true;
+                    startTime = parseInt(localStorage.getItem('sim_startTime'));
+                    toggleBtn.classList.add('checked-in');
+                    toggleBtn.title = "Check Out";
+                    startTimer();
+                }
+
+                toggleBtn.addEventListener('click', function () {
+                    if (!isCheckedIn) {
+                        isCheckedIn = true;
+                        startTime = new Date().getTime();
+                        localStorage.setItem('sim_isCheckedIn', 'true');
+                        localStorage.setItem('sim_startTime', startTime);
+                        toggleBtn.classList.add('checked-in');
+                        toggleBtn.title = "Check Out";
+                        startTimer();
+                    } else {
+                        isCheckedIn = false;
+                        localStorage.removeItem('sim_isCheckedIn');
+                        localStorage.removeItem('sim_startTime');
+                        toggleBtn.classList.remove('checked-in');
+                        toggleBtn.title = "Check In";
+                        stopTimer();
+                        timerDisplay.innerText = "00:00:00";
+                    }
+                });
+
+                function startTimer() {
+                    updateDisplay();
+                    timerInterval = setInterval(updateDisplay, 1000);
+                }
+
+                function stopTimer() {
+                    clearInterval(timerInterval);
+                }
+
+                function updateDisplay() {
+                    if (!isCheckedIn) return;
+                    let now = new Date().getTime();
+                    let diff = now - startTime;
+                    let hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    let minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    let seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    timerDisplay.innerText =
+                        (hours < 10 ? "0" + hours : hours) + ":" +
+                        (minutes < 10 ? "0" + minutes : minutes) + ":" +
+                        (seconds < 10 ? "0" + seconds : seconds);
+                }
+            }
+
+            // --- Employee Slider Logic ---
+            const slider = document.getElementById('employeeSlider');
+            const slideLeftBtn = document.getElementById('slideLeft'); // Buttons not currently in HTML, but logic exists
+            const slideRightBtn = document.getElementById('slideRight');
+
+            if (slider && slideLeftBtn && slideRightBtn) {
+                slideLeftBtn.addEventListener('click', () => {
+                    slider.scrollBy({ left: -320, behavior: 'smooth' });
+                });
+                slideRightBtn.addEventListener('click', () => {
+                    slider.scrollBy({ left: 320, behavior: 'smooth' });
+                });
             }
         });
-
-        function startTimer() {
-            // Update immediately
-            updateDisplay();
-            timerInterval = setInterval(updateDisplay, 1000);
-        }
-
-        function stopTimer() {
-            clearInterval(timerInterval);
-        }
-
-        function updateDisplay() {
-            if (!isCheckedIn) return;
-
-            let now = new Date().getTime();
-            let diff = now - startTime;
-
-            let hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            let minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            let seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-            timerDisplay.innerText =
-                (hours < 10 ? "0" + hours : hours) + ":" +
-                (minutes < 10 ? "0" + minutes : minutes) + ":" +
-                (seconds < 10 ? "0" + seconds : seconds);
-        }
-
-        // --- Employee Slider Logic ---
-        const slider = document.getElementById('employeeSlider');
-        const slideLeftBtn = document.getElementById('slideLeft');
-        const slideRightBtn = document.getElementById('slideRight');
-
-        if (slider && slideLeftBtn && slideRightBtn) {
-            slideLeftBtn.addEventListener('click', () => {
-                slider.scrollBy({ left: -320, behavior: 'smooth' }); // Scroll width approx card width + gap
-            });
-
-            slideRightBtn.addEventListener('click', () => {
-                slider.scrollBy({ left: 320, behavior: 'smooth' });
-            });
-        }
     </script>
 </body>
-
 </html>
