@@ -120,3 +120,4 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         }
     });
 });
+console.log("this is git trial")
