@@ -118,7 +118,7 @@ $conn->close();
 
         <div class="login-container">
             <div class="login-header">
-                <a href="homepage.php" class="logo-center"><i class="fa fa-layer-group"></i> Dayflow</a>
+                <a href="index.php" class="logo-center"><i class="fa fa-layer-group"></i> Dayflow</a>
                 <h2>Setup Organization</h2>
                 <p>Register your company to start managing your team.</p>
             </div>

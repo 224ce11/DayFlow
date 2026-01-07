@@ -41,14 +41,17 @@ $conn->close();
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - Dayflow</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="login_styles.css">
+    <link rel="stylesheet" href="login_styles.css?v=1.1">
     <style>
         .error-message {
             background: #fee2e2;
@@ -61,6 +64,7 @@ $conn->close();
         }
     </style>
 </head>
+
 <body>
 
     <div class="login-wrapper">
@@ -70,7 +74,7 @@ $conn->close();
 
         <div class="login-container">
             <div class="login-header">
-                <a href="homepage.php" class="logo-center">
+                <a href="index.php" class="logo-center">
                     <i class="fa fa-layer-group"></i> Dayflow
                 </a>
                 <h2>Admin Portal</h2>
@@ -97,6 +101,7 @@ $conn->close();
                     <div class="input-with-icon">
                         <i class="fa fa-lock"></i>
                         <input type="password" id="password" name="password" placeholder="••••••••" required>
+                        <i class="fa fa-eye toggle-password" onclick="togglePassword(this, 'password')"></i>
                     </div>
                 </div>
 
@@ -112,11 +117,13 @@ $conn->close();
                 <button type="submit" class="btn btn-primary btn-block">
                     Admin Sign In <i class="fa fa-arrow-right"></i>
                 </button>
-                
+
                 <div class="divider">OR</div>
-                
-                <a href="#" class="btn btn-google btn-block" onclick="alert('Google Login requires Google Cloud Console setup. Please configure CLIENT_ID and enable Google Identity API.'); return false;">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="google-icon-svg">
+
+                <a href="#" class="btn btn-google btn-block"
+                    onclick="alert('Google Login requires Google Cloud Console setup. Please configure CLIENT_ID and enable Google Identity API.'); return false;">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"
+                        class="google-icon-svg">
                     Sign in with Google
                 </a>
             </form>
@@ -127,6 +134,7 @@ $conn->close();
             </div>
         </div>
     </div>
-    <script src="style.js"></script>
+    <script src="style.js?v=1.1"></script>
 </body>
+
 </html>

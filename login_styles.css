@@ -166,6 +166,14 @@
     transition: color 0.3s;
 }
 
+.input-with-icon .toggle-password {
+    left: auto !important;
+    right: 16px !important;
+    cursor: pointer;
+    z-index: 2;
+    /* Ensure it's above input */
+}
+
 .input-with-icon input {
     width: 100%;
     padding: 14px 16px 14px 48px;
@@ -175,6 +183,11 @@
     transition: all 0.3s;
     background: var(--input-bg);
     color: var(--text-main);
+}
+
+.input-with-icon input[type="password"],
+.input-with-icon input.password-field {
+    padding-right: 48px;
 }
 
 .input-with-icon input:focus {
